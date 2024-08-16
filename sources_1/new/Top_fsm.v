@@ -4,11 +4,11 @@ module Top_fsm (
     input btn_run_stop,
     input btn_clear,
     input btn_change,
-    input rx,
+//    input rx,
     // output
     output [3:0] fndCom,
-    output [7:0] fndFont,
-    output tx
+    output [7:0] fndFont
+//    output tx
 );
     wire w_btn_run_stop;
     wire w_btn_clear;
