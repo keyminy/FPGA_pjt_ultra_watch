@@ -3,8 +3,10 @@
 module FndController(
     input clk,
     input reset,
+    input sw,
     input [6:0] digit_h,
     input [6:0] digit_l,
+    input [8:0] i_distance,
     input dot,
     output [3:0] fndCom,
     output [7:0] fndFont
@@ -15,10 +17,36 @@ module FndController(
     wire [3:0] w_digit;
     wire [3:0] w_dig_l_1,w_dig_l_10;
     wire [3:0] w_dig_h_1,w_dig_h_10;
+    wire [3:0] w_dig_ult_1,w_dig_ult_10,w_dig_ult_100,w_dig_ult_1000;
+    reg [3:0] r_ult_sw_1,r_ult_sw_2,r_ult_sw_3,r_ult_sw_4;
 
     wire [6:0] w_fndFont;
+    wire w_dot;
     
-    assign fndFont = (fndCom == 4'b1011)? {dot,w_fndFont}:{1'b1,w_fndFont};
+    // 2번째 digit만 dot깜빡거림
+    assign fndFont = (fndCom == 4'b1011)? {w_dot,w_fndFont}:{1'b1,w_fndFont};
+    
+    //sw = 1일땐, ultrasonic mode, dot은 1로 켜지지 않아야함
+    assign w_dot = (sw)?1'b1:dot;
+
+    always @(*) begin
+        case (sw)
+            1'b0:begin
+                //stop watch
+                r_ult_sw_1 = w_dig_l_1;
+                r_ult_sw_2 = w_dig_l_10;
+                r_ult_sw_3 = w_dig_h_1;
+                r_ult_sw_4 = w_dig_h_10;
+            end 
+            1'b1:begin
+                // ultrasonic
+                r_ult_sw_1 = w_dig_ult_1;
+                r_ult_sw_2 = w_dig_ult_10;
+                r_ult_sw_3 = w_dig_ult_100;
+                r_ult_sw_4 = 0;
+            end 
+        endcase
+    end
 
 
     BCD2SEG U_Bcd2Seg(
@@ -51,14 +79,28 @@ module FndController(
     .o_digit_1   (w_dig_h_1),
     .o_digit_10  (w_dig_h_10)
     );
+    digitSplitter_ultra u_digit_ult(
+        .i_distance(i_distance),
+        .o_ult_digit_1(w_dig_ult_1),
+        .o_ult_digit_10(w_dig_ult_10),
+        .o_ult_digit_100(w_dig_ult_100)
+    );
     mux_4x1 U_Mux_4x1(
         .sel(w_select),
-        .x0(w_dig_l_1),
-        .x1(w_dig_l_10),
-        .x2(w_dig_h_1),
-        .x3(w_dig_h_10),
+        .x0(r_ult_sw_1),
+        .x1(r_ult_sw_2),
+        .x2(r_ult_sw_3),
+        .x3(r_ult_sw_4),
         .y(w_digit)
     );
+    // mux_4x1 U_Mux_4x1(
+    //     .sel(w_select),
+    //     .x0(w_dig_l_1),
+    //     .x1(w_dig_l_10),
+    //     .x2(w_dig_h_1),
+    //     .x3(w_dig_h_10),
+    //     .y(w_digit)
+    // );
 
 endmodule
 
@@ -141,6 +183,17 @@ module digitSplitter(
     assign o_digit_10 = i_digit /10 % 10; // 10의 자리 추출
     assign o_digit_100 = i_digit / 100 % 10; // 100의 자리 추출
     assign o_digit_1000 = i_digit / 1000 % 10; // 1000의 자리 추출
+endmodule
+module digitSplitter_ultra(
+    input [8:0] i_distance,
+    output [3:0] o_ult_digit_1,
+    output [3:0] o_ult_digit_10,
+    output [3:0] o_ult_digit_100
+    );
+    assign o_ult_digit_1 = i_distance % 10; // 1의 자리 추출
+    assign o_ult_digit_10 = i_distance /10 % 10; // 10의 자리 추출
+    assign o_ult_digit_100 = i_distance / 100 % 10; // 100의 자리 추출
+    // assign o_digit_1000 = i_digit / 1000 % 10; // 1000의 자리 추출
 endmodule
 
 module mux_4x1(

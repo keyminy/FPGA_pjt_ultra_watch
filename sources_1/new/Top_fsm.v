@@ -4,8 +4,11 @@ module Top_fsm (
     input btn_run_stop,
     input btn_clear,
     input btn_change,
-   input rx,
+    input sw,
+    input echo,
+    input rx,
     // output
+    output trigger,
     output [3:0] fndCom,
     output [7:0] fndFont,
    output tx
@@ -104,6 +107,7 @@ module Top_fsm (
     FndController U_FndController(
         .clk(clk),
         .reset(reset),
+        .sw(sw),
         .digit_h(w_digit_h),
         .digit_l(w_digit_l),
         .dot(w_dot),
