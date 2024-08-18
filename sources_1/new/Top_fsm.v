@@ -23,6 +23,7 @@ module Top_fsm (
     // for fifo
     wire w_rx_fifo_empty,w_rx_fifo_rd_en;
     wire [7:0] w_rx_fifo_data;
+    wire [8:0] w_distance;
 
     FIFO #(
         .ADDR_WIDTH(3),
@@ -52,6 +53,14 @@ module Top_fsm (
         .rx(rx),
         .o_rx_data(w_rx_data),
         .o_rx_done(w_rx_done)
+    );
+
+    ultrasonic_sensor u_ultra_my(
+        .clk(clk),
+        .reset(reset),
+        .echo(echo),
+        .trigger(trigger),
+        .distance(w_distance)
     );
 
     FSM U_FSM(
@@ -110,6 +119,7 @@ module Top_fsm (
         .sw(sw),
         .digit_h(w_digit_h),
         .digit_l(w_digit_l),
+        .i_distance(w_distance),
         .dot(w_dot),
         .fndCom(fndCom),
         .fndFont(fndFont)

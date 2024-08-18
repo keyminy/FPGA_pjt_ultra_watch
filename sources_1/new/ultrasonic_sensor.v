@@ -24,7 +24,8 @@ module ultrasonic_sensor(
     reg [15:0] count_usec;
     reg [1:0] state,next_state,read_state;
     // count_start <= pedge, count_end <= nedge
-    reg [15:0] count_start,count_end; // start : pedge, end : nedge
+    // reg [15:0] count_start; // start : pedge, end : nedge
+    reg [15:0] count_end; // start : pedge, end : nedge
 
     clock_usec clk_us(
         .clk(clk),
@@ -59,7 +60,7 @@ module ultrasonic_sensor(
             next_state <= IDLE;
             read_state <= WAIT_PEDGE;
             trigger <= 0;
-            count_start <= 0;
+            // count_start <= 0;
             count_end <= 0;
             distance <= 0;
         end else begin
@@ -92,8 +93,8 @@ module ultrasonic_sensor(
                             if(hc_pedge) begin
                                 // when echo pedged is detected
                                 read_state <= WAIT_NEDGE;
-                                count_start <= count_usec;
-                                count_usec_en <= 1; // wait & begin count
+                                // count_start <= count_usec;
+                                count_usec_en <= 1; // begin count
                             end 
                             else if(count_usec > 16'd23_201) begin
                                 // 4m넘으면 reset
@@ -127,15 +128,44 @@ module ultrasonic_sensor(
                     endcase // endcase read_state
                 end
                 READ_DATA: begin
-                    distance <= (count_end - count_start) / 58;
-                    count_start <= 0;
+                    // distance <= (count_end - count_start) / 58;
+                    distance <= (count_end) / 58;
+                    // count_start <= 0;
                     count_end <= 0;
                     next_state <= IDLE; // reset state
                     read_state <= WAIT_PEDGE; // reset read_state
+                    count_usec_en <= 0; // added my
                 end
                 default: 
                     next_state <= IDLE;
             endcase // end case state
         end
     end
+endmodule
+
+
+module clock_usec(
+    input clk,
+    input reset,
+    output clk_usec
+    );
+    
+    reg [6:0] cnt_10nsec;  // 10ns를 1usec(=1000ns)로 바꾸기 위해 100배이므로 2의7승이 필요함.
+    wire cp_usec;
+    
+    always @(posedge clk or posedge reset) begin
+        if(reset) cnt_10nsec <= 0;
+        else if(cnt_10nsec >= 100-1) cnt_10nsec <= 0;
+        else cnt_10nsec <= cnt_10nsec + 1;
+    end
+    
+    assign cp_usec = cnt_10nsec < 50 ? 0 : 1;  // 100이 한 주기가 되기 위해서 1과 0이 반씩 있어야 되므로
+
+    // ms를 만들기 위해 us의 동기를 맞춰주기 위해
+    edge_detector_n ed_usec(
+        .clk(clk),
+        .cp_in(cp_usec), 
+        .reset(reset),
+        .n_edge(clk_usec)
+    );
 endmodule
