@@ -161,25 +161,40 @@ module time_h_l (
     localparam SEC_MSEC = 1'b0;
     localparam HOUR_MIN = 1'b1;
 
-    always @(posedge clk or posedge reset) begin
-        if(reset) begin
-            mode <= SEC_MSEC;
-        end
-        else begin
-            if(change) mode <= !mode;
-            case (mode)
-                SEC_MSEC: begin
-                    digit_h <= sec;
-                    digit_l <= ms10;
-                    // o_dot <= 1'b1;
-                end
-                HOUR_MIN: begin
-                    digit_h <= hour;
-                    digit_l <= min;
-                    // o_dot <= i_dot;
-                end
-            endcase
-        end
+    // There is an error that "m" is not working, when using UART communication
+    // always @(posedge clk or posedge reset) begin
+    //     if(reset) begin
+    //         mode <= SEC_MSEC;
+    //     end
+    //     else begin
+    //         if(change) mode <= !mode;
+    //         case (mode)
+    //             SEC_MSEC: begin
+    //                 digit_h <= sec;
+    //                 digit_l <= ms10;
+    //                 // o_dot <= 1'b1;
+    //             end
+    //             HOUR_MIN: begin
+    //                 digit_h <= hour;
+    //                 digit_l <= min;
+    //                 // o_dot <= i_dot;
+    //             end
+    //         endcase
+    //     end
+    // end
+    
+    // FSM으로 온 정제된 change 출력값에 따라 digit값 결정
+    always @(*) begin
+        case (change)
+            1'b0: begin // SEC_MSEC
+                digit_h <= sec;
+                digit_l <= ms10;
+            end
+            1'b1: begin // HOUR_MIN
+                digit_h <= hour;
+                digit_l <= min;
+            end 
+        endcase
     end
 endmodule
 
@@ -258,6 +273,7 @@ module t_count #(
         end else begin
             r_out_tick <= 0; // forgot this, this was essential!!
             if(enable) begin
+                r_count <= r_count; // tick이 들어오지 않을때 자기자신 유지, 이것까진 안해줘도되더라..
                 if(in_tick) begin
                     if(r_count >= CNT -1) begin
                         r_count <= 0;

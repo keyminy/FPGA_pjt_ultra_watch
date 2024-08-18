@@ -16,7 +16,7 @@ module FSM(
     output reg      change
     );
 
-    // for fifo
+    // for fifo uart
     reg rd_en_reg,rd_en_next;
     reg [7:0] rx_data_reg,rx_data_next;
 
@@ -35,7 +35,7 @@ module FSM(
     reg [1:0] state,next_state;
     reg state_ch,state_ch_next;
 
-    // for changing mode
+    // ===========for changing mode
     // 1.state register
     always @(posedge clk or posedge reset) begin
         if(reset) begin
@@ -54,7 +54,7 @@ module FSM(
                 end
             end
             MIN_HOUR: begin
-                if((btn_change==1'b0) || rx_data_reg =="m") begin
+                if((btn_change==1'b1) || rx_data_reg =="m") begin
                     state_ch_next = MS10_SEC;
                 end
             end
@@ -62,6 +62,7 @@ module FSM(
     end
     // 3. output combinational logic
     always @(*) begin
+        change = 1'b0; // Becareful!!... prevent error
         case (state_ch)
             MS10_SEC: begin
                 change = 1'b0;
@@ -71,8 +72,9 @@ module FSM(
             end
         endcase
     end
+    // =========== end for changing mode
 
-
+    // ===========for basic stopwatch mode
     // 1.state register
     always @(posedge clk or posedge reset) begin
         if(reset) begin
@@ -88,7 +90,7 @@ module FSM(
 
     // 2.next state combinational logic
     always @(*) begin
-        rx_data_next = 0;
+        rx_data_next = 0; // clear rx buffer!!!
         rd_en_next = 1'b0;
         if(rx_done==1'b1) begin
             rx_data_next = rx_data;
