@@ -21,7 +21,8 @@ module ultrasonic_sensor(
     wire hc_nedge, hc_pedge;
 
     reg count_usec_en;
-    reg [15:0] count_usec;
+    // reg [15:0] count_usec;
+    reg [$clog2(500_000)-1 : 0] count_usec;
     reg [1:0] state,next_state,read_state;
     // count_start <= pedge, count_end <= nedge
     // reg [15:0] count_start; // start : pedge, end : nedge
@@ -66,9 +67,11 @@ module ultrasonic_sensor(
         end else begin
             case (state)
                 IDLE:begin
-                    if(count_usec < 16'd65_535) begin
+                    // if(count_usec < 16'd65_535) begin
                         //다음 거리 측정을 정학하게 하기 위해선 60ms의 여유시간이 필요하다고 권장된다.
                         // 65.535ms(datasheet = 60ms)
+                    if(count_usec < 500_000) begin
+                        // 0.5초 세리고..
                         count_usec_en <= 1;
                         trigger <= 0;
                     end else begin
